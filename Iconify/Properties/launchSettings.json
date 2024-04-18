@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Iconify": {
+      "commandName": "Project",
+      "commandLineArgs": "D:\\GitHub\\frm\\bg3\\BG3_E6\\Icons D:\\GitHub\\frm\\bg3\\BG3_E6\\DnD-Epic6"
+    }
+  }
+}

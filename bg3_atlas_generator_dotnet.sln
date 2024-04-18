@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BG3Generators", "BG3Generators\BG3Generators.csproj", "{044DD33F-2FD9-4ECE-A495-B8FE7F01471F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Iconify", "Iconify\Iconify.csproj", "{8BB1BDC7-D09D-453E-B3B4-AFC91793F205}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{044DD33F-2FD9-4ECE-A495-B8FE7F01471F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{044DD33F-2FD9-4ECE-A495-B8FE7F01471F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{044DD33F-2FD9-4ECE-A495-B8FE7F01471F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{044DD33F-2FD9-4ECE-A495-B8FE7F01471F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BB1BDC7-D09D-453E-B3B4-AFC91793F205}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BB1BDC7-D09D-453E-B3B4-AFC91793F205}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BB1BDC7-D09D-453E-B3B4-AFC91793F205}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BB1BDC7-D09D-453E-B3B4-AFC91793F205}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0A5F33D5-8347-461F-8670-5E379CFAED07}
+	EndGlobalSection
+EndGlobal

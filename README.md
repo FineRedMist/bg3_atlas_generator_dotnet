@@ -1,4 +1,4 @@
-# bg3_atlas_generator_dotnet
+# Baldur's Gate 3 Atlas Generator C# Tool
 Commandline C# tool to generate an atlas and supporting files for Baldur's Gate 3 mods
 
 In the process of trying to create my own mod, I needed some tooling to generate my own icons.

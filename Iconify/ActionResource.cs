@@ -149,12 +149,12 @@ namespace Iconify
 
             foreach (var setting in ActionResourceIconSettings)
             {
-                string iconPath = string.Format(setting.IconPath, modName, actionResourceName);
                 if (setting.Optional) // Skipping for now.
                 {
                     continue;
                 }
 
+                string iconPath = Path.Combine(modPathRoot, string.Format(setting.IconPath, modName, actionResourceName));
                 tasks.Add(image.GenerateIcon(setting.SideLength, Path.GetDirectoryName(iconPath)!, actionResourceName));
             }
 

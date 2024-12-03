@@ -108,7 +108,7 @@ namespace Iconify
 
             var atlasId = Guid.NewGuid();
             joined.SaveDdsImage(Path.Combine(modPathRoot, "Public", modName, skillsAtlasPartialPath));
-            SaveImageMap(imageMap, atlasId, atlasAxisLength, skillsAtlasPartialPath, skillsPath);
+            SaveAtlasImageMap(imageMap, atlasId, atlasAxisLength, skillsAtlasPartialPath, skillsPath);
             SaveImageBank(atlasId, SwapTag.Present, uiRegistrationAtlasPartialPath, Path.Combine(uiPath, atlasId.ForBG3() + ".lsf.lsx"));
             //SaveImageBank(atlasId, false, partialPath, Path.Combine(uiPath, "_merged.lsx"));
 
@@ -182,7 +182,7 @@ namespace Iconify
             writer.WriteEndDocument();
         }
 
-        private static void SaveImageMap(Dictionary<string, Point> imageMap, Guid atlasId, int atlasAxisLength, string atlasPartialPath, string imageMapLsxFilePath)
+        private static void SaveAtlasImageMap(Dictionary<string, Point> imageMap, Guid atlasId, int atlasAxisLength, string atlasPartialPath, string imageMapLsxFilePath)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(imageMapLsxFilePath)!);
             XmlWriterSettings xmlWriterSettings = new XmlWriterSettings();

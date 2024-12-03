@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using BG3Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -18,96 +21,19 @@ namespace Iconify
             Used
         }
 
-        struct ActionResourceIconSetting
+        struct ActionResourceIconSource
         {
-            public string IconPath;
-            public int SideLength;
-            public IconType Type;
-            public bool Optional;
+            public string SourceFile;
+            public string ActionResourceName;
         }
-
-        private static readonly ActionResourceIconSetting[] ActionResourceIconSettings = new ActionResourceIconSetting[]
-        {
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\Shared\\Resources\\{1}.DDS",
-                SideLength = 48,
-                Type = IconType.Standard,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\Shared\\Resources\\Highlight\\{1}.DDS",
-                SideLength = 48,
-                Type = IconType.Highlight,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\Shared\\Resources\\Missing\\{1}.DDS",
-                SideLength = 48,
-                Type = IconType.Missing,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\Shared\\Resources\\Used\\{1}.DDS",
-                SideLength = 48,
-                Type = IconType.Used,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\CC\\icons_resources\\{1}.DDS",
-                SideLength = 128,
-                Type = IconType.Standard,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\ActionResources_c\\Icons\\{1}.DDS",
-                SideLength = 80,
-                Type = IconType.Standard,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\ActionResources_c\\Icons\\Resources\\{1}.DDS",
-                SideLength = 64,
-                Type = IconType.Standard,
-                Optional = false
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\ActionResources_c\\Icons\\Resources\\Highlight\\{1}.DDS",
-                SideLength = 64,
-                Type = IconType.Highlight,
-                Optional = true
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\ActionResources_c\\Icons\\Resources\\Missing\\{1}.DDS",
-                SideLength = 64,
-                Type = IconType.Missing,
-                Optional = true
-            },
-            new ActionResourceIconSetting
-            {
-                IconPath = "Mods\\{0}\\GUI\\Assets\\ActionResources_c\\Icons\\Resources\\Used\\{1}.DDS",
-                SideLength = 64,
-                Type = IconType.Used,
-                Optional = true
-            }
-        };
 
         /// <summary>
         /// From https://mod.io/g/baldursgate3/r/implementing-custom-action-resources-with-impui
         /// </summary>
-        /// <param name="inputPath">The path to the image file to generate action resource icons for.</param>
         /// <param name="modPathRoot">The path to the root of the mod.</param>
-        /// <param name="actionResourceName">The name of the action resource to generate icons for.</param>
+        /// <param name="sources">Mapping of action resource name to source file to use.</param>
         /// <returns></returns>
-        private static int CreateActionResourceIcons(string inputPath, string modPathRoot, string actionResourceName)
+        private static int CreateActionResourceIcons(string modPathRoot, IEnumerable<ActionResourceIconSource> sources)
         {
             /* From the documentation:
                 Icons are in BC6H/BC7 format
@@ -141,27 +67,183 @@ namespace Iconify
                     Mods\MODNAME\GUI\Assets\ActionResources_c\Icons\Resources\Used\ACTIONRESOURCENAME.DDS
             */
             var modName = Path.GetFileName(modPathRoot);
-
-            // First pass just duplicate the image to the right size to all locations.
-            using Image<Rgba32> image = Image.Load<Rgba32>(inputPath);
+            var guiBase = "Mods\\" + modName + "\\GUI";
 
             List<Task> tasks = new List<Task>();
+            SortedDictionary<string, int> imageMap = new SortedDictionary<string, int>();
 
-            foreach (var setting in ActionResourceIconSettings)
+            foreach (var source in sources)
             {
-                if (setting.Optional) // Skipping for now.
-                {
-                    continue;
-                }
+                // First pass just duplicate the image to the right size to all locations.
+                using Image<Rgba32> image = Image.Load<Rgba32>(source.SourceFile);
 
-                string iconPath = Path.Combine(modPathRoot, string.Format(setting.IconPath, modName, actionResourceName));
-                tasks.Add(image.GenerateIcon(setting.SideLength, Path.GetDirectoryName(iconPath)!, actionResourceName));
+                foreach (var setting in ActionResourceIconSettings)
+                {
+                    if (setting.Optional) // Skipping for now.
+                    {
+                        continue;
+                    }
+
+                    string partialPath = string.Format(setting.IconPath, source.ActionResourceName);
+                    string iconPath = Path.Combine(modPathRoot, guiBase, partialPath);
+                    imageMap[partialPath] = setting.SideLength;
+                    tasks.Add(image.GenerateIcon(setting.SideLength, Path.GetDirectoryName(iconPath)!, source.ActionResourceName));
+                }
             }
 
+            SaveActionResourceImageMap(imageMap, Path.Combine(modPathRoot, guiBase, "metadata.lsf.lsx")!);
             Task.WaitAll(tasks.ToArray());
 
             return 0;
         }
 
+        private static string FixActionResourceIconPathName(string partialPath)
+        {
+            string result = partialPath.Replace('\\', '/');
+            result = Path.ChangeExtension(result, ".png");
+            return result;
+        }
+
+        private static void SaveActionResourceImageMap(SortedDictionary<string, int> imageMap, string imageMapLsxFilePath)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(imageMapLsxFilePath)!);
+            XmlWriterSettings xmlWriterSettings = new XmlWriterSettings();
+            xmlWriterSettings.Indent = true;
+            xmlWriterSettings.Encoding = Encoding.UTF8;
+            using XmlWriter writer = XmlWriter.Create(imageMapLsxFilePath, xmlWriterSettings);
+            writer.WriteStartDocument();
+            using (var save = writer.WriteScopedElement("save"))
+            {
+                using (var version = writer.WriteScopedElement("version"))
+                {
+                    writer.WriteAttributeString("major", "4");
+                    writer.WriteAttributeString("minor", "0");
+                    writer.WriteAttributeString("revision", "0");
+                    writer.WriteAttributeString("build", "49");
+                    writer.WriteAttributeString("lslib_meta", "v1,bswap_guids,lsf_keys_adjacency");
+                }
+
+                using (var region = writer.WriteScopedElement("region"))
+                {
+                    writer.WriteAttributeString("id", "config");
+                    using (var nodeConfig = writer.WriteScopedElement("node"))
+                    {
+                        writer.WriteAttributeString("id", "config");
+                        using (var childrenConfig = writer.WriteScopedElement("children"))
+                        {
+                            using (var nodeEntries = writer.WriteScopedElement("node"))
+                            {
+                                writer.WriteAttributeString("id", "entries");
+                                using (var childrenEntries = writer.WriteScopedElement("children"))
+                                {
+                                    foreach (var image in imageMap)
+                                    {
+                                        using (var nodeImage = writer.WriteScopedElement("node"))
+                                        {
+                                            writer.WriteAttributeString("id", "Object");
+                                            writer.WriteLsxAttribute("MapKey", "FixedString", FixActionResourceIconPathName(image.Key));
+
+                                            using(var childrenImage = writer.WriteScopedElement("children"))
+                                            {
+                                                using (var attribute = writer.WriteScopedElement("node"))
+                                                {
+                                                    writer.WriteAttributeString("id", "entries");
+                                                    writer.WriteLsxAttribute("h", "int16", image.Value.ToString());
+                                                    writer.WriteLsxAttribute("mipcount", "int8", "1");
+                                                    writer.WriteLsxAttribute("w", "int16", image.Value.ToString());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            writer.WriteEndDocument();
+        }
+
+        struct ActionResourceIconSetting
+        {
+            public string IconPath;
+            public int SideLength;
+            public IconType Type;
+            public bool Optional;
+        }
+
+        private static readonly ActionResourceIconSetting[] ActionResourceIconSettings = new ActionResourceIconSetting[]
+        {
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\Shared\\Resources\\{0}.DDS",
+                SideLength = 48,
+                Type = IconType.Standard,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\Shared\\Resources\\Highlight\\{0}.DDS",
+                SideLength = 48,
+                Type = IconType.Highlight,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\Shared\\Resources\\Missing\\{0}.DDS",
+                SideLength = 48,
+                Type = IconType.Missing,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\Shared\\Resources\\Used\\{0}.DDS",
+                SideLength = 48,
+                Type = IconType.Used,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\CC\\icons_resources\\{0}.DDS",
+                SideLength = 128,
+                Type = IconType.Standard,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\ActionResources_c\\Icons\\{0}.DDS",
+                SideLength = 80,
+                Type = IconType.Standard,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\ActionResources_c\\Icons\\Resources\\{0}.DDS",
+                SideLength = 64,
+                Type = IconType.Standard,
+                Optional = false
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\ActionResources_c\\Icons\\Resources\\Highlight\\{0}.DDS",
+                SideLength = 64,
+                Type = IconType.Highlight,
+                Optional = true
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\ActionResources_c\\Icons\\Resources\\Missing\\{0}.DDS",
+                SideLength = 64,
+                Type = IconType.Missing,
+                Optional = true
+            },
+            new ActionResourceIconSetting
+            {
+                IconPath = "Assets\\ActionResources_c\\Icons\\Resources\\Used\\{0}.DDS",
+                SideLength = 64,
+                Type = IconType.Used,
+                Optional = true
+            }
+        };
     }
 }

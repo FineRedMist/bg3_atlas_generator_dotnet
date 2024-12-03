@@ -1,16 +1,12 @@
 {
   "profiles": {
-    "WSL": {
-      "commandName": "WSL2",
-      "distributionName": ""
-    },
-    "ActionResource": {
-      "commandName": "Project",
-      "commandLineArgs": "actionresource D:\\GitHub\\frm\\bg3_mod_epic6\\Icons\\E6_Logo.png D:\\GitHub\\frm\\bg3_mod_epic6\\DnD-Epic6 FeatPoint"
-    },
     "Atlas": {
       "commandName": "Project",
       "commandLineArgs": "atlas D:\\GitHub\\frm\\bg3_mod_epic6\\Icons D:\\GitHub\\frm\\bg3_mod_epic6\\DnD-Epic6"
+    },
+    "Iconify": {
+      "commandName": "Project",
+      "commandLineArgs": "actionresource D:\\GitHub\\frm\\bg3_mod_epic6\\Icons\\E6_Logo.png D:\\GitHub\\frm\\bg3_mod_epic6\\DnD-Epic6 FeatPoint"
     }
   }
 }

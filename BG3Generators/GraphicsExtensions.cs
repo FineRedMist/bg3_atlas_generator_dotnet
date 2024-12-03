@@ -97,9 +97,12 @@ namespace BG3Common
             var clone = image.Clone();
             return Task.Factory.StartNew(() =>
             {
+                var targetPath = Path.Combine(basePath, imageName + ".DDS");
                 clone.Mutate(x => x.Resize(sideLength, sideLength));
-                clone.SaveDdsImage(Path.Combine(basePath, imageName + ".DDS"));
+                clone.SaveDdsImage(targetPath);
                 clone.Dispose();
+                Console.WriteLine("Saved {1}x{1} icon to: {0}", targetPath, sideLength);
+
             }, TaskCreationOptions.LongRunning);
         }
     }

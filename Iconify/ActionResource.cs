@@ -7,6 +7,7 @@ using System.Xml;
 using BG3Common;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace Iconify
 {
@@ -75,19 +76,31 @@ namespace Iconify
             foreach (var source in sources)
             {
                 // First pass just duplicate the image to the right size to all locations.
-                using Image<Rgba32> image = Image.Load<Rgba32>(source.SourceFile);
+                using Image<Rgba32> standardImage = Image.Load<Rgba32>(source.SourceFile); // Standard image source
 
                 foreach (var setting in ActionResourceIconSettings)
                 {
-                    if (setting.Optional) // Skipping for now.
+                    var image = standardImage; // Use the standard image if we can't find and override image.
+                    ImageTransform? transform = null; // The transform to apply if we can't find a specific image.
+
+                    if (setting.Type != IconType.Standard)
                     {
-                        continue;
+                        // Check to see if there is an override image for this icon type.
+                        var alternateImage = GetImagePath(source.SourceFile, setting.Type);
+                        if (File.Exists(alternateImage))
+                        {
+                            image = Image.Load<Rgba32>(alternateImage);
+                        }
+                        else // If not, apply a default transform.
+                        {
+                            transform = GetTransform(setting.Type);
+                        }
                     }
 
                     string partialPath = string.Format(setting.IconPath, source.ActionResourceName);
                     string iconPath = Path.Combine(modPathRoot, guiBase, partialPath);
                     imageMap[partialPath] = setting.SideLength;
-                    tasks.Add(image.GenerateIcon(setting.SideLength, Path.GetDirectoryName(iconPath)!, source.ActionResourceName));
+                    tasks.Add(image.GenerateIcon(setting.SideLength, Path.GetDirectoryName(iconPath)!, source.ActionResourceName, transform));
                 }
             }
 
@@ -95,6 +108,15 @@ namespace Iconify
             Task.WaitAll(tasks.ToArray());
 
             return 0;
+        }
+
+        private static string GetImagePath(string standardImagePath, IconType type)
+        {
+            if(type == IconType.Standard)
+            {
+                return standardImagePath;
+            }
+            return Path.Combine(Path.GetDirectoryName(standardImagePath)!, Path.GetFileNameWithoutExtension(standardImagePath) + "_" + type.ToString() + Path.GetExtension(standardImagePath));
         }
 
         private static string FixActionResourceIconPathName(string partialPath)
@@ -245,5 +267,49 @@ namespace Iconify
                 Optional = true
             }
         };
+
+        private static ImageTransform? GetTransform(IconType type)
+        {
+            switch(type )
+            {
+                case IconType.Missing: // Transform to near black (haven't seen an example to sample yet).
+                    return (image) =>
+                    {
+                        for (int y = 0; y < image.Height; y++)
+                        {
+                            for (int x = 0; x < image.Width; x++)
+                            {
+                                var pixel = image[x, y];
+                                image[x, y] = new Rgba32(46, 44, 42, pixel.A);
+                            }
+                        }
+                    };
+                case IconType.Used: // Transform to grey (similar shade for actions and bonus actions)
+                    return (image) =>
+                    {
+                        for(int y = 0; y < image.Height; y++)
+                        {
+                            for (int x = 0; x < image.Width; x++)
+                            {
+                                var pixel = image[x, y];
+                                image[x, y] = new Rgba32(120, 118, 116, pixel.A);
+                            }
+                        }
+                    };
+                case IconType.Highlight: // Transform to near white (similar shade for actions and bonus actions)
+                    return (image) =>
+                    {
+                        for (int y = 0; y < image.Height; y++)
+                        {
+                            for (int x = 0; x < image.Width; x++)
+                            {
+                                var pixel = image[x, y];
+                                image[x, y] = new Rgba32(209, 207, 205, pixel.A);
+                            }
+                        }
+                    };
+            }
+            return null;
+        }
     }
 }

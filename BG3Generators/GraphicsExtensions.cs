@@ -7,6 +7,11 @@ using SixLabors.ImageSharp.Processing;
 namespace BG3Common
 {
     /// <summary>
+    /// A transform that can be applied to the resized <paramref name="image"/> before saving it as a DDS.
+    /// </summary>
+    public delegate void ImageTransform(Image<Rgba32> image);
+
+    /// <summary>
     /// A UV Coordinate for the atlas.
     /// </summary>
     public struct UVCoordinate
@@ -92,13 +97,17 @@ namespace BG3Common
         /// given <paramref name="sideLength"/>. This gets saved to the combined path of <paramref name="basePath"/>/<paramref name="imageName"/>.DDS.
         /// </summary>
         /// <returns>A task to monitor the completion of creating an icon</returns>
-        public static Task GenerateIcon(this Image<Rgba32> image, int sideLength, string basePath, string imageName)
+        public static Task GenerateIcon(this Image<Rgba32> image, int sideLength, string basePath, string imageName, ImageTransform? transform = null)
         {
             var clone = image.Clone();
             return Task.Factory.StartNew(() =>
             {
                 var targetPath = Path.Combine(basePath, imageName + ".DDS");
                 clone.Mutate(x => x.Resize(sideLength, sideLength));
+                if (transform != null)
+                {
+                    transform(clone);
+                }
                 clone.SaveDdsImage(targetPath);
                 clone.Dispose();
                 Console.WriteLine("Saved {1}x{1} icon to: {0}", targetPath, sideLength);

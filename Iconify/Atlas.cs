@@ -261,7 +261,7 @@ namespace Iconify
             writer.WriteEndDocument();
         }
 
-        private static readonly string[] mSupportedExtensions = [".png", ".gif", ".jpg", ".bmp", ".webp"];
+        private static readonly string[] mSupportedExtensions = [".png", ".gif", ".jpg", ".jpeg", ".bmp", ".webp"];
         static string[] GatherImageFiles(string path)
         {
             return Directory.EnumerateFiles(path)
